@@ -1,0 +1,7 @@
+{
+  "sourceDefinitionId": "edfd338e-5647-4c0b-adf4-da0e75f5a750",
+  "name": "Redshift",
+  "dockerRepository": "airbyte/source-redshift",
+  "dockerImageTag": "0.1.0",
+  "documentationUrl": "https://hub.docker.com/r/airbyte/source-redshift"
+}
