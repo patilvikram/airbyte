@@ -1360,9 +1360,7 @@ components:
         destinationId:
           $ref: "#/components/schemas/DestinationId"
         syncMode:
-          type: string
-          enum:
-            - full_refresh
+          $ref: "#/components/schemas/SyncMode"
         syncSchema:
           $ref: "#/components/schemas/SourceSchema"
         schedule:
@@ -1404,9 +1402,7 @@ components:
         destinationId:
           $ref: "#/components/schemas/DestinationId"
         syncMode:
-          type: string
-          enum:
-            - full_refresh
+          $ref: "#/components/schemas/SyncMode"
         syncSchema:
           $ref: "#/components/schemas/SourceSchema"
         schedule:
@@ -1476,12 +1472,26 @@ components:
       properties:
         name:
           type: string
-        syncMode:
-          $ref: "#/components/schemas/SyncMode"
         fields:
           type: array
           items:
             $ref: "#/components/schemas/SourceSchemaField"
+        supportedSyncModes:
+          type: array
+          items:
+            $ref: "#/components/schemas/SyncMode"
+        userDefinedCursorField:
+          type: boolean
+        defaultCursorField:
+          type: array
+          items:
+            type: string
+        syncMode:
+          $ref: "#/components/schemas/SyncMode"
+        cursorField:
+          type: array
+          items:
+            type: string
     SourceSchemaField:
       type: object
       required:

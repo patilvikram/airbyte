@@ -51,7 +51,7 @@ public class SourceHandler {
   private final Supplier<UUID> uuidGenerator;
   private final ConfigRepository configRepository;
   private final JsonSchemaValidator validator;
-  private SchedulerHandler schedulerHandler;
+  private final SchedulerHandler schedulerHandler;
   private final ConnectionsHandler connectionsHandler;
 
   public SourceHandler(final ConfigRepository configRepository,

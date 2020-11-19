@@ -237,7 +237,7 @@ public class AcceptanceTests {
     UUID destinationId = createCsvDestination().getDestinationId();
     String name = "test-connection-" + UUID.randomUUID().toString();
     ConnectionSchedule schedule = new ConnectionSchedule().timeUnit(MINUTES).units(100L);
-    ConnectionCreate.SyncModeEnum syncMode = ConnectionCreate.SyncModeEnum.FULL_REFRESH;
+    SyncMode syncMode = SyncMode.FULL_REFRESH;
 
     ConnectionRead createdConnection = createConnection(name, sourceId, destinationId, schema, schedule, syncMode);
 
@@ -257,7 +257,7 @@ public class AcceptanceTests {
     UUID destinationId = createCsvDestination().getDestinationId();
     SourceSchema schema = discoverSourceSchema(sourceId);
     schema.getStreams().forEach(table -> table.getFields().forEach(c -> c.setSelected(true))); // select all fields
-    ConnectionCreate.SyncModeEnum syncMode = ConnectionCreate.SyncModeEnum.FULL_REFRESH;
+    SyncMode syncMode = SyncMode.FULL_REFRESH;
 
     ConnectionRead createdConnection = createConnection(connectionName, sourceId, destinationId, schema, null, syncMode);
 
@@ -266,28 +266,6 @@ public class AcceptanceTests {
     assertEquals(ConnectionSyncRead.StatusEnum.SUCCEEDED, connectionSyncRead.getStatus());
     assertSourceAndTargetDbInSync(sourcePsql);
   }
-
-//  @Test
-//  @Order(7)
-//  public void testIncrementalSync() throws Exception {
-//    String connectionName = "test-connection";
-//    UUID sourceId = createPostgresSource().getSourceId();
-//    UUID destinationId = createCsvDestination().getDestinationId();
-//    SourceSchema schema = discoverSourceSchema(sourceId);
-//    schema.getStreams().forEach(stream -> {
-//      stream.setSyncMode(SyncMode.INCREMENTAL);
-//      stream.getFields().forEach(c -> c.setSelected(true));
-//    }); // select all fields
-//    ConnectionSchedule connectionSchedule = new ConnectionSchedule().units(100L).timeUnit(MINUTES);
-//    ConnectionCreate.SyncModeEnum syncMode = ConnectionCreate.SyncModeEnum.FULL_REFRESH;
-//
-//    ConnectionRead createdConnection = createConnection(connectionName, sourceId, destinationId, schema, connectionSchedule, syncMode);
-//
-//    ConnectionSyncRead connectionSyncRead =
-//        apiClient.getConnectionApi().syncConnection(new ConnectionIdRequestBody().connectionId(createdConnection.getConnectionId()));
-//    assertEquals(ConnectionSyncRead.StatusEnum.SUCCEEDED, connectionSyncRead.getStatus());
-//    assertSourceAndTargetDbInSync(sourcePsql);
-//  }
 
   @Test
   @Order(8)
@@ -298,7 +276,7 @@ public class AcceptanceTests {
     SourceSchema schema = discoverSourceSchema(sourceId);
     schema.getStreams().forEach(table -> table.getFields().forEach(c -> c.setSelected(true))); // select all fields
     ConnectionSchedule connectionSchedule = new ConnectionSchedule().units(1L).timeUnit(MINUTES);
-    ConnectionCreate.SyncModeEnum syncMode = ConnectionCreate.SyncModeEnum.FULL_REFRESH;
+    SyncMode syncMode = SyncMode.FULL_REFRESH;
 
     createConnection(connectionName, sourceId, destinationId, schema, connectionSchedule, syncMode);
 
@@ -375,9 +353,9 @@ public class AcceptanceTests {
                                           UUID destinationId,
                                           SourceSchema schema,
                                           ConnectionSchedule schedule,
-                                          ConnectionCreate.SyncModeEnum syncMode)
+                                          SyncMode syncMode)
       throws ApiException {
-    ConnectionRead connection = apiClient.getConnectionApi().createConnection(
+    final ConnectionRead connection = apiClient.getConnectionApi().createConnection(
         new ConnectionCreate()
             .status(ConnectionStatus.ACTIVE)
             .sourceId(sourceId)
@@ -398,9 +376,8 @@ public class AcceptanceTests {
         getDestinationConfig());
   }
 
-  private DestinationRead createDestination(String name, UUID workspaceId, UUID destinationId, JsonNode destinationConfig)
-      throws ApiException {
-    DestinationRead destination =
+  private DestinationRead createDestination(String name, UUID workspaceId, UUID destinationId, JsonNode destinationConfig) throws ApiException {
+    final DestinationRead destination =
         apiClient.getDestinationApi().createDestination(new DestinationCreate()
             .name(name)
             .connectionConfiguration(Jsons.jsonNode(destinationConfig))
