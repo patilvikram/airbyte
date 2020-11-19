@@ -24,6 +24,8 @@ definitions:
     properties:
       name:
         type: string
+      syncMode:
+        "$ref": SyncMode.yaml
       selected:
         type: boolean
       fields:

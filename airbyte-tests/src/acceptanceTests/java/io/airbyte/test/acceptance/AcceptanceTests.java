@@ -49,6 +49,7 @@ import io.airbyte.api.client.model.SourceCreate;
 import io.airbyte.api.client.model.SourceIdRequestBody;
 import io.airbyte.api.client.model.SourceRead;
 import io.airbyte.api.client.model.SourceSchema;
+import io.airbyte.api.client.model.SyncMode;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.resources.MoreResources;
 import io.airbyte.config.persistence.PersistenceConstants;
@@ -256,16 +257,37 @@ public class AcceptanceTests {
     UUID destinationId = createCsvDestination().getDestinationId();
     SourceSchema schema = discoverSourceSchema(sourceId);
     schema.getStreams().forEach(table -> table.getFields().forEach(c -> c.setSelected(true))); // select all fields
-    ConnectionSchedule connectionSchedule = new ConnectionSchedule().units(100L).timeUnit(MINUTES);
     ConnectionCreate.SyncModeEnum syncMode = ConnectionCreate.SyncModeEnum.FULL_REFRESH;
 
-    ConnectionRead createdConnection = createConnection(connectionName, sourceId, destinationId, schema, connectionSchedule, syncMode);
+    ConnectionRead createdConnection = createConnection(connectionName, sourceId, destinationId, schema, null, syncMode);
 
-    ConnectionSyncRead connectionSyncRead =
-        apiClient.getConnectionApi().syncConnection(new ConnectionIdRequestBody().connectionId(createdConnection.getConnectionId()));
+    ConnectionSyncRead connectionSyncRead = apiClient.getConnectionApi()
+        .syncConnection(new ConnectionIdRequestBody().connectionId(createdConnection.getConnectionId()));
     assertEquals(ConnectionSyncRead.StatusEnum.SUCCEEDED, connectionSyncRead.getStatus());
     assertSourceAndTargetDbInSync(sourcePsql);
   }
+
+//  @Test
+//  @Order(7)
+//  public void testIncrementalSync() throws Exception {
+//    String connectionName = "test-connection";
+//    UUID sourceId = createPostgresSource().getSourceId();
+//    UUID destinationId = createCsvDestination().getDestinationId();
+//    SourceSchema schema = discoverSourceSchema(sourceId);
+//    schema.getStreams().forEach(stream -> {
+//      stream.setSyncMode(SyncMode.INCREMENTAL);
+//      stream.getFields().forEach(c -> c.setSelected(true));
+//    }); // select all fields
+//    ConnectionSchedule connectionSchedule = new ConnectionSchedule().units(100L).timeUnit(MINUTES);
+//    ConnectionCreate.SyncModeEnum syncMode = ConnectionCreate.SyncModeEnum.FULL_REFRESH;
+//
+//    ConnectionRead createdConnection = createConnection(connectionName, sourceId, destinationId, schema, connectionSchedule, syncMode);
+//
+//    ConnectionSyncRead connectionSyncRead =
+//        apiClient.getConnectionApi().syncConnection(new ConnectionIdRequestBody().connectionId(createdConnection.getConnectionId()));
+//    assertEquals(ConnectionSyncRead.StatusEnum.SUCCEEDED, connectionSyncRead.getStatus());
+//    assertSourceAndTargetDbInSync(sourcePsql);
+//  }
 
   @Test
   @Order(8)
