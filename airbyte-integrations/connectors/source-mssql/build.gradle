@@ -34,3 +34,5 @@ dependencies {
     implementation files(project(':airbyte-integrations:bases:base-java').airbyteDocker.outputs)
     // integrationTestImplementation files(project(':airbyte-integrations:bases:base-java').airbyteDocker.outputs)
 }
+
+compileJava.dependsOn(':airbyte-integrations:connectors:source-mysql:build')
