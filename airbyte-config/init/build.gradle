@@ -6,20 +6,17 @@ dependencies {
     implementation 'commons-cli:commons-cli:1.4'
 }
 
-//application {
-//    mainClass = 'io.airbyte.config.init.RepositorySeed'
-//}
-
+// generate seed for each yaml file.
 task generateSeed {
     def seeds = [
             [
-                "destinationDefinitionId",
-                new File(project.projectDir, '/src/main/resources/seed/destination_definitions.yaml'),
+                "sourceDefinitionId",
+                new File(project.projectDir, '/src/main/resources/seed/source_definitions.yaml'),
                 new File(project.projectDir, '/src/main/resources/config/STANDARD_SOURCE_DEFINITION')
             ],
             [
-                "sourceDefinitionId",
-                new File(project.projectDir, '/src/main/resources/seed/source_definitions.yaml'),
+                "destinationDefinitionId",
+                new File(project.projectDir, '/src/main/resources/seed/destination_definitions.yaml'),
                 new File(project.projectDir, '/src/main/resources/config/STANDARD_DESTINATION_DEFINITION')
             ],
     ]

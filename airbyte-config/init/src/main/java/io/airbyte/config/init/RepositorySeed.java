@@ -1,24 +1,41 @@
+/*
+ * MIT License
+ *
+ * Copyright (c) 2020 Airbyte
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 package io.airbyte.config.init;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableMap;
 import io.airbyte.commons.io.IOs;
 import io.airbyte.commons.json.Jsons;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -28,7 +45,17 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+/**
+ * This class takes in a yaml file with a list of objects. It then then assigns each object a uuid
+ * based on its name attribute. The uuid is written as a field in the object with the key specified
+ * as the id-name. It then writes each object to its own file in the specified output directory.
+ * Each file's name is the generated uuid. The goal is that a user should be able to add objects to
+ * the database seed without having to generate uuids themselves. The output files should be
+ * compatible with our file system database (config persistence). It also checks that each name is
+ * unique in the set it is outputting to avoid duplicates clobbering each other.
+ */
 public class RepositorySeed {
+
   private static final Options OPTIONS = new Options();
   private static final Option ID_NAME_OPTION = new Option("id", "id-name", true, "field name of the id");
   private static final Option INPUT_PATH_OPTION = new Option("i", "input-path", true, "path to input file");
@@ -46,30 +73,26 @@ public class RepositorySeed {
     final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     final JsonNode jsonNode = mapper.readTree(input.toFile());
     final Iterator<JsonNode> elements = jsonNode.elements();
+    final Set<String> names = new HashSet<>();
 
-    while(elements.hasNext()) {
+    while (elements.hasNext()) {
       final JsonNode element = Jsons.clone(elements.next());
-      final UUID uuid = UUID.nameUUIDFromBytes(Jsons.serialize(element).getBytes(Charsets.UTF_8));
-      ((ObjectNode)element).put(idName, uuid.toString());
+      final String name = element.get("name").asText();
+
+      // validate the name is unique.
+      if (names.contains(name)) {
+        throw new IllegalArgumentException("Multiple records have the name: " + name);
+      }
+      names.add(name);
+
+      final UUID uuid = UUID.nameUUIDFromBytes(name.getBytes(Charsets.UTF_8));
+      ((ObjectNode) element).put(idName, uuid.toString());
 
       IOs.writeFile(
           output,
           uuid.toString() + ".json",
           element.toPrettyString()); // todo (cgardens) - adds obnoxious space in front of ":".
     }
-  }
-
-  public static void run2() throws IOException {
-    final Path path = Path.of("/Users/charles/code/airbyte/airbyte-config/init/src/main/resources/config/STANDARD_SOURCE_DEFINITION");
-    final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-    ArrayNode array = new ArrayNode(yamlMapper.getNodeFactory());
-    Files.list(path).forEach(file -> {
-        final JsonNode deserialize = Jsons.deserialize(IOs.readFile(file));
-        array.add(deserialize);
-//        final JsonNode jsonNode = mapper.readTree(file.toFile());
-    });
-    final String s = yamlMapper.writeValueAsString(array);
-    IOs.writeFile(Path.of("/tmp/end.yaml"), s);
   }
 
   private static CommandLine parse(String[] args) {
@@ -85,19 +108,12 @@ public class RepositorySeed {
   }
 
   public static void main(String[] args) throws IOException {
-    run2();
+    final CommandLine parsed = parse(args);
+    final String idName = parsed.getOptionValue(ID_NAME_OPTION.getOpt());
+    final Path inputPath = Path.of(parsed.getOptionValue(INPUT_PATH_OPTION.getOpt()));
+    final Path outputPath = Path.of(parsed.getOptionValue(OUTPUT_PATH_OPTION.getOpt()));
+
+    new RepositorySeed().run(idName, inputPath, outputPath);
   }
-//  public static void main(String[] args) throws IOException {
-//    System.out.println("args = " + Arrays.toString(args));
-//    final CommandLine parsed = parse(args);
-//    final String idName = parsed.getOptionValue(ID_NAME_OPTION.getOpt());
-//    final Path inputPath = Path.of(parsed.getOptionValue(INPUT_PATH_OPTION.getOpt()));
-//    final Path outputPath = Path.of(parsed.getOptionValue(OUTPUT_PATH_OPTION.getOpt()));
-//
-////    final Path inputPath = Path.of("/Users/charles/code/airbyte/airbyte-config/init/src/main/resources/destinations.yaml");
-////    final Path outputPath = Path.of("/Users/charles/code/airbyte/airbyte-config/init/src/main/resources/config/STANDARD_DESTINATION_DEFINITION");
-//
-//    new RepositorySeed().run(idName, inputPath, outputPath);
-//  }
 
 }
